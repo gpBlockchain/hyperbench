@@ -16,7 +16,8 @@ require (
 	github.com/hyperledger/fabric-amcl v0.0.0-20190902191507-f66264322317 // indirect
 	github.com/hyperledger/fabric-protos-go v0.0.0-20200707132912-fee30f3ccd23
 	github.com/hyperledger/fabric-sdk-go v1.0.1-0.20210927191040-3e3a3c6aeec9
-  github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric v0.0.0-20190822125948-d2b42602e52e
+	github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric v0.0.0-20190822125948-d2b42602e52e
+	github.com/influxdata/influxdb v1.8.3
 	github.com/influxdata/tdigest v0.0.1
 	github.com/json-iterator/go v1.1.11
 	github.com/karrick/godirwalk v1.16.1 // indirect
@@ -38,6 +39,7 @@ require (
 	golang.org/x/tools v0.1.7 // indirect
 	gopkg.in/jcmturner/goidentity.v3 v3.0.0 // indirect
 	layeh.com/gopher-luar v1.0.8-0.20190807124245-b07e371a3bb0
+
 )
 
 replace layeh.com/gopher-luar => github.com/layeh/gopher-luar v1.0.8-0.20190807124245-b07e371a3bb0

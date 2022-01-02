@@ -1,0 +1,32 @@
+[engine]
+rate = 10
+duration = "10m"
+cap = 10
+
+[client]
+script = "benchmark/influxdbExample/script.lua"  # 脚本
+type = "flato"                         # 区块链类型
+config = "benchmark/influxdbExample/hyperchain"  # 区块链SDK配置路径
+contract = "benchmark/influxdbExample/contract"  # 合约目录路径
+args = []                              # 合约参数路径
+
+[client.options] # 客户端选项
+
+
+[recorder.log]
+dump=false
+dir="./logs"
+level="notice"
+
+[recorder.csv]
+dir="./csv"
+
+[recorder.influxdb]
+url = "http://172.22.66.159:8086" # influxdb url
+database = "collectd" # 数据库
+username = "admin"  #用户名
+password = "configured" #密码
+operator = "user1" # 操作人
+monitnodeips=[""] # 监控的节点ip
+
+

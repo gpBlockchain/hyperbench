@@ -56,6 +56,14 @@ const (
 	LogLevelPath = "recorder.log.level"
 	LogDirPath   = "recorder.log.dir"
 	LogDumpPath  = "recorder.log.dump"
+
+	//influxdb
+	RecorderInfluxdbPath         = "recorder.influxdb"
+	RecorderInfluxdbUrlPath      = "recorder.influxdb.url"
+	RecorderInfluxdbDatabasePath = "recorder.influxdb.database"
+	RecorderInfluxdbUsernamePath = "recorder.influxdb.username"
+	RecorderInfluxdbPasswordPath = "recorder.influxdb.password"
+	RecorderInfluxdbOperatorPath = "recorder.influxdb.operator"
 )
 
 // logger

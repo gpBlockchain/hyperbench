@@ -57,6 +57,20 @@ func NewRecorder() Recorder {
 		}
 	}
 
+	// influxdb
+	if viper.IsSet(common.RecorderInfluxdbPath) {
+		benchmark := viper.GetString(common.BenchmarkDirPath)
+		url := viper.GetString(common.RecorderInfluxdbUrlPath)
+		db := viper.GetString(common.RecorderInfluxdbDatabasePath)
+		uname := viper.GetString(common.RecorderInfluxdbUsernamePath)
+		pwd := viper.GetString(common.RecorderInfluxdbPasswordPath)
+		idb, err := newInfluxdb(benchmark, url, db, uname, pwd)
+		if err == nil {
+			ps = append(ps, idb)
+		}
+	}
+
+
 	return &baseRecorder{
 		ps: ps,
 	}
