@@ -28,12 +28,13 @@ const (
 
 // Client is used to communicate with worker by master.
 type Client struct {
-	url    string
-	nonce  string
-	index  int
-	logger *logging.Logger
-	path   string
-	err    error
+	url      string
+	nonce    string
+	index    int
+	logger   *logging.Logger
+	path     string
+	err      error
+	finished bool
 }
 
 // NewClient create Client.
@@ -86,7 +87,7 @@ func (c *Client) SetContext(d []byte) error {
 }
 
 // CheckoutCollector checkout collector.
-func (c *Client) CheckoutCollector() (collector.Collector, bool) {
+func (c *Client) CheckoutCollector() (collector.Collector, bool, error) {
 	var err error
 
 	defer func() {
@@ -99,21 +100,21 @@ func (c *Client) CheckoutCollector() (collector.Collector, bool) {
 	values := url.Values{"nonce": {c.nonce}}
 	resp, err = http.PostForm(c.url+network.CheckoutCollectorPath, values)
 	if err != nil {
-		return nil, false
+		return nil, false, err
 	}
 	// nolint
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		err = errors.New(resp.Status)
-		return nil, false
+		return nil, false, err
 	}
 
 	var bs []byte
 	bs, err = ioutil.ReadAll(resp.Body)
 	if err != nil {
 		c.err = err
-		return nil, false
+		return nil, false, err
 	}
 
 	var retJSON map[string]interface{}
@@ -121,7 +122,7 @@ func (c *Client) CheckoutCollector() (collector.Collector, bool) {
 	if err != nil {
 		c.err = err
 		c.logger.Error(err)
-		return nil, false
+		return nil, false, err
 	}
 
 	colType, _ := retJSON["type"].(string)
@@ -133,13 +134,13 @@ func (c *Client) CheckoutCollector() (collector.Collector, bool) {
 		if err != nil {
 			c.err = err
 			c.logger.Error(err)
-			return nil, false
+			return nil, false, err
 		}
 
-		return col, colValid
+		return col, colValid, nil
 	}
 
-	return nil, false
+	return nil, false, nil
 }
 
 // Teardown close the worker manually.

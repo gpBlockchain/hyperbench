@@ -2,6 +2,7 @@ package fabric
 
 import (
 	"encoding/json"
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/ledger"
 	"math/rand"
 	"path/filepath"
 	"strconv"
@@ -37,6 +38,7 @@ type Fabric struct {
 	AccountManager *ClientManager
 	MSP            bool
 	invoke         bool
+	ledgerClient   *ledger.Client
 }
 
 //Msg contains message of context
@@ -64,6 +66,7 @@ func New(blockchainBase *base.BlockchainBase) (client *Fabric, err error) {
 	}
 	client.MSP = cast.ToBool(client.Options["MSP"])
 	client.invoke = true
+	client.ledgerClient = client.SDK.GetLedgerClient(client.ChannelID, client.SDK.OrgAdmin, client.SDK.OrgName)
 	return
 }
 
@@ -191,6 +194,7 @@ func (f *Fabric) GetContext() (string, error) {
 		StartBlock: info.BCI.Height,
 	}
 	marshal, e := json.Marshal(msg)
+	f.StartBlock = msg.StartBlock
 	return string(marshal), e
 }
 
@@ -211,7 +215,6 @@ func (f *Fabric) SetContext(context string) error {
 	}
 	f.AccountManager.Clients = msg.Accounts
 	f.CCId = msg.CCId
-	f.StartBlock = msg.StartBlock
 	return nil
 }
 
@@ -222,12 +225,22 @@ func (f *Fabric) ResetContext() error {
 
 //Statistic statistic node performance
 func (f *Fabric) Statistic(statistic bcom.Statistic) (*common2.RemoteStatistic, error) {
-	from, to := statistic.From, statistic.To
-	statisticData, err := GetTPS(f.SDK.GetLedgerClient(f.ChannelID, f.SDK.OrgAdmin, f.SDK.OrgName), f.StartBlock, from, to)
+	statisticData, err := GetTPS(f.ledgerClient, f.StartBlock, statistic)
 	if err != nil {
 		return nil, errors.Wrap(err, "query error")
 	}
 	return statisticData, nil
+}
+
+
+// LogLedgerHeight return timestamp and chain height
+func (f *Fabric) LogLedgerHeight() (int64, uint64) {
+	to := time.Now().UnixNano()
+	ledgerInfo, err := f.ledgerClient.QueryInfo()
+	if err != nil {
+		return to, 0
+	}
+	return to, ledgerInfo.BCI.Height
 }
 
 //String serial fabric to string

@@ -70,4 +70,7 @@ type Blockchain interface {
 	// Statistic query the statistics information in the time interval defined by
 	// nanosecond-level timestamps `from` and `to`
 	Statistic(statistic bcom.Statistic) (*common.RemoteStatistic, error)
+
+	// LogLedgerHeight return timestamp and chain height
+	LogLedgerHeight() (int64, uint64)
 }

@@ -3,7 +3,6 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/meshplus/hyperbench/core/network/server"
 	"time"
 
 	"github.com/op/go-logging"
@@ -13,6 +12,7 @@ import (
 
 	"github.com/meshplus/hyperbench/common"
 	"github.com/meshplus/hyperbench/core/controller"
+	"github.com/meshplus/hyperbench/core/network/server"
 	"github.com/meshplus/hyperbench/filesystem"
 )
 

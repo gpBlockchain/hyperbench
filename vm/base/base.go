@@ -11,6 +11,12 @@ type VMBase struct {
 	Logger *logging.Logger
 }
 
+
+
+func (v *VMBase) LogLedgerHeight() (int64, uint64) {
+	panic("implement me")
+}
+
 // Type return the vm type.
 func (v *VMBase) Type() string {
 	return "base"
@@ -42,7 +48,7 @@ func (v *VMBase) GetContext() ([]byte, error) {
 }
 
 // Statistic statistic remote execute info.
-func (v *VMBase) Statistic(from, to int64) (*common.RemoteStatistic, error) {
+func (v *VMBase) Statistic(from, to int64, timeSeq []int64, heightSeq []uint64) (*common.RemoteStatistic, error) {
 	return &common.RemoteStatistic{}, nil
 }
 

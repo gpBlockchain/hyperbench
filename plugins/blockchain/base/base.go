@@ -76,6 +76,11 @@ func (b *BlockchainBase) Statistic(statistic bcom.Statistic) (*common.RemoteStat
 	return &common.RemoteStatistic{}, nil
 }
 
+// LogLedgerHeight return timestamp and chain height
+func (b *BlockchainBase) LogLedgerHeight() (int64, uint64) {
+	return 0, 0
+}
+
 // NewBlockchainBase new blockchain base.
 func NewBlockchainBase(clientConfig ClientConfig) *BlockchainBase {
 	return &BlockchainBase{

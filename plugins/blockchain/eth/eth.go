@@ -441,6 +441,16 @@ func KeystoreToPrivateKey(privateKeyFile, password string) (string, string, erro
 
 }
 
+
+// LogLedgerHeight return timestamp and chain height
+func (e *ETH) LogLedgerHeight() (int64, uint64) {
+	to := time.Now().UnixNano()
+	blkNum, err := e.ethClient.BlockNumber(context.Background())
+	if err != nil {
+		return to, 0
+	}
+	return to, blkNum
+}
 // GetTPS calculates txnum and blocknum of pressure test
 func GetTPS(e *ETH, beginTime, endTime int64) (*fcom.RemoteStatistic, error) {
 	if beginTime > endTime {

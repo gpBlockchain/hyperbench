@@ -1,5 +1,7 @@
 package common
 
+import "github.com/meshplus/hyperbench/common"
+
 // Invoke define need filed for invoke contract.
 type Invoke struct {
 	Func string        `mapstructure:"func"`
@@ -30,4 +32,7 @@ type Context string
 type Statistic struct {
 	From int64 `mapstructure:"from"`
 	To   int64 `mapstructure:"to"`
+	TimeSeq []int64 `mapstructure:"time_seq"`
+	HeightSeq []uint64 `mapstructure:"height_seq"`
+	data common.Data
 }
