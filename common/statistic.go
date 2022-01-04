@@ -63,4 +63,7 @@ type RemoteStatistic struct {
 
 	// transaction info
 	TxNum int
+
+	Tpss []int
+	Bpss []int
 }

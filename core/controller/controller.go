@@ -21,10 +21,16 @@ type Controller interface {
 	Run() error
 }
 
+
+type WorkerClient struct {
+	worker   worker.Worker
+	finished bool // check worker finied work
+}
+
 // ControllerImpl is the implement of Controller
 type ControllerImpl struct {
 	master       master.Master
-	workers      []worker.Worker
+	workers      []*WorkerClient
 	recorder     recorder.Recorder
 	reportChan   chan common.Report
 	curCollector collector.Collector
@@ -46,12 +52,19 @@ func NewController() (Controller, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "can not create workers")
 	}
+	var workerClients []*WorkerClient
+	for i := 0; i < len(ws); i++ {
+		workerClients = append(workerClients, &WorkerClient{
+			ws[i],
+			false,
+		})
+	}
 
 	r := recorder.NewRecorder()
 
 	return &ControllerImpl{
 		master:       m,
-		workers:      ws,
+		workers:      workerClients,
 		recorder:     r,
 		logger:       common.GetLogger("ctrl"),
 		curCollector: collector.NewTDigestSummaryCollector(),
@@ -87,7 +100,7 @@ func (l *ControllerImpl) Prepare() (err error) {
 	l.logger.Notice("ready to set context")
 	// must ensure all workers ready
 	for _, w := range l.workers {
-		err = w.SetContext(bsCtx)
+		err = w.worker.SetContext(bsCtx)
 		if err != nil {
 			return errors.Wrap(err, "can not set context")
 		}
@@ -104,11 +117,16 @@ func (l *ControllerImpl) Run() (err error) {
 	l.start = time.Now().UnixNano()
 	for _, w := range l.workers {
 		// nolint
-		go w.Do()
+		go w.worker.Do()
 	}
 
 	// get response
-	go l.asyncGetAllResponse()
+
+	done := make(chan struct{})
+	go l.asyncGetAllResponse(done)
+
+	// get real time tps
+	go l.logLedgerHeight(done)
 
 	for report := range l.reportChan {
 		l.recorder.Process(report)
@@ -116,6 +134,10 @@ func (l *ControllerImpl) Run() (err error) {
 
 	l.recorder.Release()
 	sd, err := l.master.Statistic(l.start, l.end)
+
+	if err != nil{
+		l.logger.Notice(err)
+	}
 	if err == nil {
 		l.logStatisticData(sd)
 	}
@@ -124,19 +146,39 @@ func (l *ControllerImpl) Run() (err error) {
 	return nil
 }
 
+func (l *ControllerImpl) logLedgerHeight(done chan struct{}) {
+	// compute tps every tpsUnit seconds
+	tpsUnit := l.master.GetTpsUnit()
+	ticker := time.NewTicker(tpsUnit)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ticker.C:
+			l.master.LogBlockHeightWithTime()
+		case <-done:
+			close(l.reportChan)
+			return
+		}
+	}
+}
+
+
 func (l *ControllerImpl) logStatisticData(sd *common.RemoteStatistic) {
 
 	l.logger.Notice("")
-	l.logger.Notice("       From        \t         To           \tBlk\tTx")
-	l.logger.Noticef("%s\t%s\t%v\t%v",
+	l.logger.Notice("       From        \t         To           \tBlk\tTx\tTps\tBps")
+	l.logger.Noticef("%s\t%s\t%v\t%v\t%v\t%v",
 		time.Unix(0, sd.Start).Format("2006-01-02 15:04:05"),
 		time.Unix(0, sd.End).Format("2006-01-02 15:04:05"),
 		sd.BlockNum,
-		sd.TxNum)
+		sd.TxNum,
+		sd.Tpss[len(sd.Tpss)-1],
+		sd.Bpss[len(sd.Bpss)-1],
+	)
 	l.logger.Notice("")
 }
 
-func (l *ControllerImpl) asyncGetAllResponse() {
+func (l *ControllerImpl) asyncGetAllResponse(done chan struct{}) {
 
 	workerNum := len(l.workers)
 
@@ -180,7 +222,7 @@ func (l *ControllerImpl) asyncGetAllResponse() {
 
 		case <-ctx.Done():
 			//l.logger.Notice("====ctx.done")
-			close(l.reportChan)
+			close(done)
 			return
 		}
 	}
@@ -195,9 +237,21 @@ func (l *ControllerImpl) report() {
 	l.curCollector.Reset()
 }
 
-func (l *ControllerImpl) getWorkerResponse(w worker.Worker, batchWg *sync.WaitGroup, finishWg *sync.WaitGroup, output chan collector.Collector) {
-	col, valid := w.CheckoutCollector()
+func (l *ControllerImpl) getWorkerResponse(w *WorkerClient, batchWg *sync.WaitGroup, finishWg *sync.WaitGroup, output chan collector.Collector) {
+	if w.finished{
+		batchWg.Done()
+		return
+	}
+
+	col, valid, err := w.worker.CheckoutCollector()
+	if err != nil{
+		l.logger.Error(err)
+		batchWg.Done()
+		return
+	}
 	if !valid {
+		w.finished = true
+		l.logger.Notice("finishWg done")
 		finishWg.Done()
 		batchWg.Done()
 		return
@@ -209,6 +263,6 @@ func (l *ControllerImpl) getWorkerResponse(w worker.Worker, batchWg *sync.WaitGr
 
 func (l *ControllerImpl) teardownWorkers() {
 	for _, w := range l.workers {
-		w.Teardown()
+		w.worker.Teardown()
 	}
 }

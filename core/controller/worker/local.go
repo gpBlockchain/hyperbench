@@ -172,9 +172,9 @@ func (l *LocalWorker) Teardown() {
 }
 
 // CheckoutCollector checkout collector.
-func (l *LocalWorker) CheckoutCollector() (collector.Collector, bool) {
+func (l *LocalWorker) CheckoutCollector() (collector.Collector, bool, error) {
 	c, b := <-l.colRet
-	return c, b
+	return c, b, nil
 }
 
 // Done close the worker.

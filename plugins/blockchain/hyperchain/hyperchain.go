@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
+	"strconv"
 	"strings"
 	"time"
 
@@ -338,6 +339,20 @@ func (c *Client) Transfer(args bcom.Transfer, ops ...bcom.Option) (result *fcom.
 	return c.Confirm(ret)
 }
 
+// LogLedgerHeight return timestamp and chain height
+func (c *Client) LogLedgerHeight() (int64, uint64) {
+	to := time.Now().UnixNano()
+	hexHeight, err := c.rpcClient.GetChainHeight()
+	if err != nil {
+		return to, 0
+	}
+	height, er := strconv.ParseUint(hexHeight, 16, 32)
+	if er != nil {
+		return to, 0
+	}
+	return to, height
+}
+
 //SetContext set test group context in go client
 func (c *Client) SetContext(context string) error {
 	c.Logger.Debugf("prepare msg: %v", context)
@@ -414,17 +429,66 @@ func (c *Client) GetContext() (string, error) {
 
 //Statistic statistic remote node performance
 func (c *Client) Statistic(statistic bcom.Statistic) (*fcom.RemoteStatistic, error) {
-	from, to := statistic.From, statistic.To
-	tps, err := c.rpcClient.QueryTPS(uint64(from), uint64(to))
-	if err != nil {
-		return nil, errors.Wrap(err, "query error")
+	timeSeq := statistic.TimeSeq
+	timeSeq = append(timeSeq, statistic.To)
+	var (
+		tpss          []int
+		bpss          []int
+		from          int64
+		maxTps        float64
+		maxBps        int
+		totalTxNum    int
+		totalBlockNum int
+	)
+	maxTps = 0
+	maxBps = 0
+	totalTxNum = 0
+	totalBlockNum = 0
+	from = statistic.From
+	for i := 0; i < len(timeSeq); i++ {
+		tps, err := c.rpcClient.QueryTPS(uint64(from), uint64(timeSeq[i]))
+		if err != nil {
+			c.Logger.Warningf(fmt.Sprintf("query tps error: from:%v,to:%v,err:%v", from, timeSeq[i], err))
+			continue
+			//return nil, errors.Wrap(errors.New(fmt.Sprintf("from:%v,to:%v,err:%v", from, timeSeq[i], err)), "query tps error")
+		}
+		if tps.Tps > maxTps {
+			maxTps = tps.Tps
+		}
+		totalTxNum += int(tps.Tps) * int(time.Unix(0, timeSeq[i]).Sub(time.Unix(0, from)).Seconds())
+		tpss = append(tpss, int(tps.Tps))
+
+		bps := int(tps.BlocksPerSec)
+		if bps > maxBps {
+			maxBps = bps
+		}
+		bpss = append(bpss, bps)
+		totalBlockNum += int(tps.TotalBlockNum)
+		from = timeSeq[i]
 	}
 
+	tps, err := c.rpcClient.QueryTPS(uint64(statistic.From), uint64(statistic.To))
+	if err != nil {
+		return nil, errors.Wrap(errors.New(fmt.Sprintf("from:%v,to:%v,err:%v", from, statistic.To, err)), "query tps error")
+	}
+
+	if tps.Tps < maxTps {
+		c.Logger.Notice("max tps:",maxTps)
+	}
+
+	tpss = append(tpss, int(maxTps))
+	bpss = append(bpss, maxBps)
+
+	tpss = append(tpss, int(tps.Tps))
+	bpss = append(bpss, int(tps.BlocksPerSec))
+
 	ret := &fcom.RemoteStatistic{
-		Start:    from,
-		End:      to,
-		BlockNum: int(tps.TotalBlockNum),
-		TxNum:    int(tps.Tps) * int(to-from) / int(time.Second),
+		Start:    statistic.From,
+		End:      statistic.To,
+		BlockNum: totalBlockNum,
+		TxNum:    totalTxNum,
+		Tpss:     tpss,
+		Bpss:     bpss,
 	}
 
 	return ret, nil

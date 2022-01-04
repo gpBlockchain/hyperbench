@@ -18,7 +18,7 @@ type Worker interface {
 	Do() error
 
 	// CheckoutCollector checkout collector.
-	CheckoutCollector() (collector.Collector, bool)
+	CheckoutCollector() (collector.Collector, bool, error)
 
 	// Teardown close the worker manually.
 	Teardown()
@@ -61,6 +61,7 @@ func NewWorkers() (workers []Worker, err error) {
 		p := viper.GetString(common.BenchmarkDirPath)
 
 		target := p + ".tar.gz"
+		os.RemoveAll(target)
 		err := archiver.Archive([]string{p}, target)
 		if err != nil {
 			return nil, errors.Wrapf(err, "can not archive: %v", target)

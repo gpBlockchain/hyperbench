@@ -90,6 +90,7 @@ func (s *Server) Start() error {
 			c.String(http.StatusNotAcceptable, "need file")
 			return
 		}
+		s.removeBenchmark()
 		s.logger.Noticef("upload %v", f.Filename)
 		s.fp = s.getFilePath(f.Filename)
 		s.createBenchmark()
@@ -102,9 +103,13 @@ func (s *Server) Start() error {
 		s.logger.Notice("fp", s.fp)
 		err = archiver.Unarchive(s.fp, benchmarkPath)
 		if err != nil {
-			s.logger.Errorf("can not open file: %v", err)
-			c.String(http.StatusNotAcceptable, "can not open file")
-			return
+			if strings.Contains(err.Error(), "file already exists") {
+				s.logger.Errorf("can not open file: %v", err)
+			} else {
+				s.logger.Errorf("can not open file: %v", err)
+				c.String(http.StatusNotAcceptable, "can not open file")
+				return
+			}
 		}
 		_ = os.RemoveAll(s.fp)
 		s.fp = strings.TrimSuffix(s.fp, ".tar.gz")
@@ -223,7 +228,10 @@ func (s *Server) Start() error {
 			return
 		}
 
-		col, valid := s.workerHandle.CheckoutCollector()
+		col, valid, err := s.workerHandle.CheckoutCollector()
+		if err != nil {
+			//todo add something for err
+		}
 		var t, data string
 		if col != nil {
 			t = col.Type()
@@ -252,7 +260,7 @@ func (s *Server) Start() error {
 		}
 
 		s.nonce = idleNonce
-		s.removeBenchmark()
+		//s.removeBenchmark()
 		viper.Reset()
 		c.String(http.StatusOK, "ok")
 	})
