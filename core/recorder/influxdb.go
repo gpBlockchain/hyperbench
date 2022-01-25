@@ -7,21 +7,27 @@ import (
 	"time"
 )
 
+type BlockChainConfig struct {
+	blockChainType string
+	benchmarkName string
+	config string
+}
+
 type influxdb struct {
 	url       *url.URL
 	database  string
 	username  string
 	password  string
-	benchmark string
+	blkConfig BlockChainConfig
 
 	client *client.Client
 }
 
 func (i *influxdb) process(report common.Report) {
-	go i.send(report)
+	go i.sendProcess(report)
 }
 
-func (i *influxdb) send(report common.Report) {
+func (i *influxdb) sendProcess(report common.Report) {
 	pts := make([]client.Point, 0, len(report.Cur.Results))
 
 	for _, r := range report.Cur.Results {
@@ -74,10 +80,56 @@ func (i *influxdb) send(report common.Report) {
 	}
 }
 
-func (i *influxdb) release() {
+
+
+func (i *influxdb)statistic(statistic common.RemoteStatistic){
+	go i.sendStatistic(statistic)
 }
 
-func newInfluxdb(benchmark string, URL string, database string, username string, password string) (*influxdb, error) {
+
+
+func (i *influxdb) sendStatistic(statistic common.RemoteStatistic) {
+	// base info
+	pts := make([]client.Point, 0, 1)
+
+	pts = append(pts, client.Point{
+		Measurement: "statistic",
+		Tags: map[string]string{
+			"label": "label",
+		},
+		Time: time.Unix(0, statistic.Start),
+		Fields: map[string]interface{}{
+			"blockChainType":i.blkConfig.blockChainType,
+			"benchmarkName":i.blkConfig.benchmarkName,
+			"config":i.blkConfig.config,
+			"Start":statistic.Start,
+			"End":statistic.End,
+			"Tps":statistic.Tpss,
+			"AvgTps":statistic.Tpss,
+			"Bps":statistic.Bpss,
+			"TxNum":statistic.TxNum,
+			"BlockNum":statistic.BlockNum,
+		},
+	})
+
+	bps := client.BatchPoints{
+		Points:   pts,
+		Database: i.database,
+	}
+
+	_, err := i.client.Write(bps)
+	if err != nil {
+		common.GetLogger("infx").Error(err)
+	}
+}
+
+
+func (i *influxdb) release(){
+}
+
+
+
+func newInfluxdb(blkConfig BlockChainConfig, URL string, database string, username string, password string) (*influxdb, error) {
 	u, err := url.Parse(URL)
 	if err != nil {
 		return nil, err
@@ -87,7 +139,8 @@ func newInfluxdb(benchmark string, URL string, database string, username string,
 		database:  database,
 		username:  username,
 		password:  password,
-		benchmark: benchmark,
+		blkConfig: blkConfig,
+
 	}
 	err = i.makeClient()
 	if err != nil {

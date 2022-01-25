@@ -2,6 +2,7 @@ package recorder
 
 import (
 	"encoding/csv"
+	"io/ioutil"
 	"os"
 	"path"
 	"time"
@@ -18,6 +19,7 @@ type Recorder interface {
 	Process(input common.Report)
 	// Release source.
 	Release()
+
 	processor
 }
 
@@ -59,12 +61,21 @@ func NewRecorder() Recorder {
 
 	// influxdb
 	if viper.IsSet(common.RecorderInfluxdbPath) {
-		benchmark := viper.GetString(common.BenchmarkDirPath)
+
+		configData,err := ioutil.ReadFile(viper.GetString(common.BenchmarkDirPath)+"/config.toml")
+		if err != nil{
+			logger.Error("read config failed :%s",viper.GetString(common.BenchmarkDirPath)+"/config.toml")
+		}
+		blkConfig := BlockChainConfig{
+			benchmarkName: viper.GetString(common.BenchmarkDirPath),
+			blockChainType: viper.GetString(common.ClientTypePath),
+			config: string(configData),
+		}
 		url := viper.GetString(common.RecorderInfluxdbUrlPath)
 		db := viper.GetString(common.RecorderInfluxdbDatabasePath)
 		uname := viper.GetString(common.RecorderInfluxdbUsernamePath)
 		pwd := viper.GetString(common.RecorderInfluxdbPasswordPath)
-		idb, err := newInfluxdb(benchmark, url, db, uname, pwd)
+		idb, err := newInfluxdb(blkConfig, url, db, uname, pwd)
 		if err == nil {
 			ps = append(ps, idb)
 		}
