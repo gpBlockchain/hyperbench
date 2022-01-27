@@ -52,6 +52,7 @@ func registerTookKit(L *lua.LState) lua.LValue {
 	toolKitTable := L.NewTypeMetatable(toolKit)
 	L.SetGlobal(toolKit, toolKitTable)
 	L.SetField(toolKitTable, methods, L.SetFuncs(L.NewTable(), toolKitMethod))
+	
 	L.SetField(toolKitTable, index, L.NewFunction(func(L *lua.LState) int {
 		invokeName := L.CheckString(2)
 		if _, ok := toolKitMethod[invokeName]; ok {

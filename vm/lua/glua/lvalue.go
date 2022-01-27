@@ -9,17 +9,17 @@ import (
 )
 
 func NewClientLValue(L *lua.LState, client blockchain.Blockchain) lua.LValue {
-	return newBlockchain(L, client)
+	return newBlockchainTable(L, client)
 }
 
 func NewToolKitLValue(L *lua.LState, kit *toolkit.ToolKit) lua.LValue {
-	return newToolKit(L, kit)
+	return newToolKitTable(L, kit)
 }
 
 func NewLIndexLValue(L *lua.LState, idx *idex.Index) lua.LValue {
-	return newIdexIndex(L, idx)
+	return newIdexIndexTable(L, idx)
 }
 
 func NewResultLValue(L *lua.LState, r *common.Result) lua.LValue {
-	return newCommonResult(L, r)
+	return newCommonResultTable(L, r)
 }
