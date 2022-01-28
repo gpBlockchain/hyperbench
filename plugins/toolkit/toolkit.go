@@ -30,11 +30,6 @@ func (t *ToolKit) RandInt(min, max int) int {
 	return randomInt(min, max)
 }
 
-func (t *ToolKit) TestInterface(input interface{}) interface{}{
-	fmt.Println("interface:",input)
-	return input
-}
-
 // String convert to string
 func (t *ToolKit) String(input interface{}, offsets ...int) string {
 

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/meshplus/hyperbench/plugins/toolkit"
 	lua "github.com/yuin/gopher-lua"
-	luar "layeh.com/gopher-luar"
 	"reflect"
 	"testing"
 )
@@ -36,24 +35,22 @@ func Test_toolkit(t *testing.T) {
 	defer L.Close()
 	mt := L.NewTypeMetatable("u")
 	L.SetGlobal("u", mt)
-	L.SetField(mt, "toolkit", newTookKitMock(L))
+	L.SetField(mt, "toolkit", newToolKit(L, toolkit.NewToolKit()))
 	if err := L.DoString(script1); err != nil {
 		panic(err)
 	}
 }
-
 
 func Test_toolkit_table(t *testing.T) {
 	L := lua.NewState()
 	defer L.Close()
 	mt := L.NewTypeMetatable("u")
 	L.SetGlobal("u", mt)
-	L.SetField(mt, "toolkit", newToolKitTable(L,toolkit.NewToolKit()))
+	L.SetField(mt, "toolkit", newToolKit(L, toolkit.NewToolKit()))
 	if err := L.DoString(script2); err != nil {
 		panic(err)
 	}
 }
-
 
 //55 :45
 func BenchmarkName(b *testing.B) {
@@ -61,32 +58,29 @@ func BenchmarkName(b *testing.B) {
 	defer L.Close()
 	mt := L.NewTypeMetatable("u")
 	L.SetGlobal("u", mt)
-	L.SetField(mt, "toolkit", newToolKitTable(L,&toolkit.ToolKit{}))
+	L.SetField(mt, "toolkit", newToolKit(L, &toolkit.ToolKit{}))
 	L.SetField(mt, "toolkitMetatable", newTookKit(L))
-	scriptTable:=`
+	scriptTable := `
 	u.toolkit.Hex("aaaaaa")
 	`
-	scriptLua :=`
+	scriptLua := `
 	u.toolkitMetatable:Hex("aaaaaa")
 	`
 	for i := 0; i < b.N; i++ {
-		runMetaTable(L,scriptLua)
-		runTable(L,scriptTable)
+		runMetaTable(L, scriptLua)
+		runTable(L, scriptTable)
 	}
 }
-func runMetaTable(L *lua.LState,script string){
+func runMetaTable(L *lua.LState, script string) {
 	if err := L.DoString(script); err != nil {
 		panic(err)
 	}
 }
-func runTable(L *lua.LState,script string){
+func runTable(L *lua.LState, script string) {
 	if err := L.DoString(script); err != nil {
 		panic(err)
 	}
 }
-
-
-
 
 func Test_toolkit2(t *testing.T) {
 	kit := toolkit.NewToolKit()
@@ -110,7 +104,7 @@ func Test_1234(t *testing.T) {
 	}
 }
 
-func Test_12345(t *testing.T){
+func Test_12345(t *testing.T) {
 	L := lua.NewState()
 	t1 := L.NewTable()
 	t2 := L.NewTable()
@@ -125,8 +119,8 @@ func Test_12345(t *testing.T){
 	t1.RawSetInt(4, t2) // 模拟map
 	mt := L.NewTypeMetatable("u")
 	L.SetGlobal("u", mt)
-	L.SetField(mt,"demo",t1)
-	var script1 =`
+	L.SetField(mt, "demo", t1)
+	var script1 = `
 		print("-----1-----")
 		print(u.demo.key)
 		u.demo.key=2
@@ -138,8 +132,8 @@ func Test_12345(t *testing.T){
 	}
 }
 
-func Test_123452(t *testing.T){
-	kit :=toolkit.ToolKit{}
+func Test_123452(t *testing.T) {
+	kit := toolkit.ToolKit{}
 	fmt.Println("get kit 成员变量")
 	getFieldByReflect(kit)
 	fmt.Println("get kit 方法名 和参数")
@@ -147,7 +141,7 @@ func Test_123452(t *testing.T){
 
 }
 
-func getFieldByReflect(data interface{}) interface{}{
+func getFieldByReflect(data interface{}) interface{} {
 	typeOfData := reflect.TypeOf(data)
 	valueOfData := reflect.ValueOf(data)
 	switch typeOfData.Kind() {
@@ -169,5 +163,5 @@ func getFieldByReflect(data interface{}) interface{}{
 
 func newTookKit(L *lua.LState) lua.LValue {
 	u := &toolkit.ToolKit{Name: "aa"}
-	return luar.New(L, u)
+	return NewToolKitLValue(L, u)
 }

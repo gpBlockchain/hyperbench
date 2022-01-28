@@ -44,6 +44,7 @@ require (
 	github.com/yuin/gopher-lua v0.0.0-20190206043414-8bfc7677f583
 	golang.org/x/tools v0.1.8 // indirect
 	gopkg.in/jcmturner/goidentity.v3 v3.0.0 // indirect
+	layeh.com/gopher-luar v1.0.10
 )
 
 replace golang.org/x/sys => github.com/golang/sys v0.0.0-20190813064441-fde4db37ae7a

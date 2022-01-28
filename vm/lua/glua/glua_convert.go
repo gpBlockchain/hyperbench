@@ -3,6 +3,7 @@ package glua
 import (
 	"encoding/json"
 	"github.com/meshplus/hyperbench/common"
+	"github.com/mitchellh/mapstructure"
 	"github.com/pkg/errors"
 	"github.com/yuin/gopher-lua"
 	"reflect"
@@ -22,7 +23,27 @@ func Go2Lua(L *lua.LState, val interface{}) lua.LValue {
 	if err = json.Unmarshal(jsonBytes, &value); err != nil {
 		return lua.LNil
 	}
-	return decode(L, value)
+	return go2Lua(L, value)
+}
+
+// TableLua2GoStruct maps the lua table to the given struct pointer.
+func TableLua2GoStruct(tbl *lua.LTable, st interface{}) error {
+	value, err := Lua2Go(tbl)
+	mp, ok := value.(map[string]interface{})
+	if !ok {
+		return errors.New("arguments #1 must be a table, but got an array")
+	}
+	config := &mapstructure.DecoderConfig{
+		WeaklyTypedInput: true,
+		Result:           st,
+		TagName:          "lua",
+		ErrorUnused:      false,
+	}
+	decoder, err := mapstructure.NewDecoder(config)
+	if err != nil {
+		return err
+	}
+	return decoder.Decode(mp)
 }
 
 // Lua2Go convert lua.LValue to corresponding type
@@ -76,30 +97,12 @@ func Lua2Go(value lua.LValue) (interface{}, error) {
 	}
 }
 
-//LuaParams convert lua.LValue to string or string slice or user data interface
-func LuaParams(value lua.LValue) interface{} {
-	switch val := value.(type) {
-	case lua.LString:
-		return val.String()
-	case lua.LNumber:
-		return int(val)
-	case lua.LBool:
-		return bool(val)
-	case *lua.LTable:
-		arr := make([]interface{}, val.Len())
-		for j := 1; j <= val.Len(); j++ {
-			val := val.RawGetInt(j)
-			arr[j-1] = LuaParams(val)
-		}
-		return arr
-	case *lua.LUserData:
-		return val.Value
-	default:
-		return ""
+func go2Lua(L *lua.LState, value interface{}) lua.LValue {
+	// check value is struct for Implementation lua.table
+	luaValue, ok := go2luaStruct(L, value)
+	if ok {
+		return luaValue
 	}
-}
-
-func decode(L *lua.LState, value interface{}) lua.LValue {
 	switch converted := value.(type) {
 	case bool:
 		return lua.LBool(converted)
@@ -110,19 +113,27 @@ func decode(L *lua.LState, value interface{}) lua.LValue {
 	case []interface{}:
 		arr := L.CreateTable(len(converted), 0)
 		for _, item := range converted {
-			arr.Append(decode(L, item))
+			arr.Append(go2Lua(L, item))
 		}
 		return arr
 	case map[string]interface{}:
 		tbl := L.CreateTable(0, len(converted))
 		for key, item := range converted {
-			tbl.RawSetH(lua.LString(key), decode(L, item))
+			tbl.RawSetH(lua.LString(key), go2Lua(L, item))
 		}
 		return tbl
-	case *common.Result:
-		return newCommonResult(L, value.(*common.Result))
 	case nil:
 		return lua.LNil
 	}
 	panic("unreachable")
+}
+
+// go2luaStruct convert struct for Implementation lua.table  to lua.Table
+func go2luaStruct(L *lua.LState, value interface{}) (lua.LValue, bool) {
+	switch value.(type) {
+	case *common.Result:
+		return newCommonResult(L, value.(*common.Result)), true
+	default:
+		return nil, false
+	}
 }

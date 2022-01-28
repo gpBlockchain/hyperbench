@@ -5,7 +5,6 @@ import (
 	"errors"
 	"github.com/meshplus/hyperbench/plugins/toolkit"
 	"github.com/meshplus/hyperbench/vm/lua/glua"
-	//luar "github.com/yuin/gopher-lua"
 
 	"github.com/meshplus/hyperbench/common"
 	"github.com/meshplus/hyperbench/plugins/blockchain"
@@ -15,7 +14,6 @@ import (
 	"github.com/meshplus/hyperbench/vm/base"
 	"github.com/spf13/viper"
 	lua "github.com/yuin/gopher-lua"
-	//luar "github.com/yuin/gopher-lua"
 )
 
 // VM the implementation of BaseVM for lua.
@@ -110,9 +108,7 @@ func (v *VM) injectTestcaseBase() {
 		return 0
 	}
 	var result lua.LGFunction = func(state *lua.LState) int {
-
-		//state.Push(luar.New(state, &common.Result{}))
-		state.Push(v.newResultLValue(state))
+		state.Push(glua.NewResultLValue(v.vm, &common.Result{}))
 		return 1
 	}
 
@@ -270,37 +266,12 @@ func (v *VM) setPlugins(table *lua.LTable) (err error) {
 		return err
 	}
 
-	// todo: register the plugins manually instead of luar's reflection to optimize performance
-	lClient := v.newClientLValue()
-	lToolKit := v.newToolKitLValue()
-	lIndex := v.newLIndexLValue()
+	lClient := glua.NewClientLValue(v.vm,v.client)
+	lToolKit := glua.NewToolKitLValue(v.vm,&toolkit.ToolKit{})
+	lIndex := glua.NewLIndexLValue(v.vm, v.index)
 	v.vm.SetField(table, client, lClient)
 	v.vm.SetField(table, tool, lToolKit)
 	v.vm.SetField(table, index, lIndex)
 
 	return nil
-}
-
-func (v *VM) newClientLValue() lua.LValue {
-	//return luar.New(v.vm,v.client)
-	return glua.NewClientLValue(v.vm, v.client)
-}
-
-//
-func (v *VM) newToolKitLValue() lua.LValue {
-	//
-	//	return luar.New(v.vm, toolkit.NewToolKit())
-	return glua.NewToolKitLValue(v.vm, &toolkit.ToolKit{})
-}
-
-//
-func (v *VM) newLIndexLValue() lua.LValue {
-	//return luar.New(v.vm, v.index)
-	return glua.NewLIndexLValue(v.vm, v.index)
-}
-
-//
-func (v *VM) newResultLValue(state *lua.LState) lua.LValue {
-	//return luar.New(state, &common.Result{})
-	return glua.NewResultLValue(v.vm, &common.Result{})
 }

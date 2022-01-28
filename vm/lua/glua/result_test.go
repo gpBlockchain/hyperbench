@@ -3,7 +3,6 @@ package glua
 import (
 	"github.com/meshplus/hyperbench/common"
 	lua "github.com/yuin/gopher-lua"
-	luar "layeh.com/gopher-luar"
 	"testing"
 	"time"
 )
@@ -30,7 +29,7 @@ func Test_CommonResult(t *testing.T) {
 	L.SetGlobal("u", mt)
 
 	L.SetField(mt, "new", L.NewFunction(func(L *lua.LState) int {
-		new := luar.New(L, &common.Result{
+		new := newCommonResult(L, &common.Result{
 			Label:       "heheh",
 			UID:         "uid",
 			BuildTime:   time.Now().Unix(),
