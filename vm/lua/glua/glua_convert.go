@@ -137,3 +137,28 @@ func go2luaStruct(L *lua.LState, value interface{}) (lua.LValue, bool) {
 		return nil, false
 	}
 }
+
+//	 function run()
+//	    local i = 0
+//	    print("----coro-----")
+//	    return i
+//    end
+func runLuaRunFunc(state *lua.LState, script string) (lua.LValue, error) {
+	//exec lua run func
+	err := state.DoString(script)
+	if err != nil {
+		return nil, err
+	}
+	fn := state.GetGlobal("run").(*lua.LFunction)
+	err = state.CallByParam(lua.P{
+		Fn:      fn,
+		NRet:    1,
+		Protect: false,
+	})
+	if err != nil {
+		return nil, err
+	}
+	ret := state.Get(-1)
+	state.Pop(1)
+	return ret, nil
+}

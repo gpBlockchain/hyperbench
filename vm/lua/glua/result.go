@@ -5,6 +5,7 @@ import (
 	lua "github.com/yuin/gopher-lua"
 )
 
+// todo Compare the luaToGo for performance of lua.Table and lua.UserData
 func newCommonResult(L *lua.LState, r *fcom.Result) lua.LValue {
 	//todo replace reflect
 	resultTable := L.NewTable()
@@ -14,7 +15,6 @@ func newCommonResult(L *lua.LState, r *fcom.Result) lua.LValue {
 	resultTable.RawSetString("SendTime", lua.LNumber(r.SendTime))
 	resultTable.RawSetString("WriteTime", lua.LNumber(r.WriteTime))
 	resultTable.RawSetString("Status", lua.LString(r.Status))
-	//todo support ret
-	//resultTable.RawSetString("Status",lua.LTable{}(r.Status))
+	resultTable.RawSetString("Ret", go2Lua(L, r.Ret))
 	return resultTable
 }

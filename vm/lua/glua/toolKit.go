@@ -5,7 +5,7 @@ import (
 	lua "github.com/yuin/gopher-lua"
 )
 
-func HexLuaFunction(L *lua.LState, kit *toolkit.ToolKit) *lua.LFunction {
+func hexLuaFunction(L *lua.LState, kit *toolkit.ToolKit) *lua.LFunction {
 	return L.NewFunction(func(state *lua.LState) int {
 		input := state.CheckString(1)
 		ret := kit.Hex(input)
@@ -23,10 +23,20 @@ func randStrLuaFunction(L *lua.LState, kit *toolkit.ToolKit) *lua.LFunction {
 	})
 }
 
-func StringLuaFunction(L *lua.LState, kit *toolkit.ToolKit) *lua.LFunction {
+func randIntLuaFunction(L *lua.LState, kit *toolkit.ToolKit) *lua.LFunction {
+	return L.NewFunction(func(state *lua.LState) int {
+		min := state.CheckInt(1)
+		max := state.CheckInt(2)
+		ret := kit.RandInt(min, max)
+		L.Push(lua.LNumber(ret))
+		return 1
+	})
+}
+
+func stringLuaFunction(L *lua.LState, kit *toolkit.ToolKit) *lua.LFunction {
 	return L.NewFunction(func(state *lua.LState) int {
 		argLength := state.GetTop()
-		if argLength < 2 {
+		if argLength < 1 {
 			panic("args are less than 1")
 		}
 		input := state.CheckAny(1)
@@ -48,8 +58,9 @@ func StringLuaFunction(L *lua.LState, kit *toolkit.ToolKit) *lua.LFunction {
 
 func newToolKit(L *lua.LState, kit *toolkit.ToolKit) lua.LValue {
 	toolkitTable := L.NewTable()
-	toolkitTable.RawSetString("Hex", HexLuaFunction(L, kit))
+	toolkitTable.RawSetString("Hex", hexLuaFunction(L, kit))
 	toolkitTable.RawSetString("RandStr", randStrLuaFunction(L, kit))
-	toolkitTable.RawSetString("String", StringLuaFunction(L, kit))
+	toolkitTable.RawSetString("RandInt", randIntLuaFunction(L, kit))
+	toolkitTable.RawSetString("String", stringLuaFunction(L, kit))
 	return toolkitTable
 }

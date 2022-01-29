@@ -225,14 +225,15 @@ func (v *VM) Run(ctx fcom.TxContext) (*fcom.Result, error) {
 	}
 	val := v.vm.Get(-1)
 	v.vm.Pop(1)
-
-	ud, ok := val.(*lua.LUserData)
+	// todo  replace Result -> Lua.UserData
+	ud, ok := val.(*lua.LTable)
 	if !ok {
 		return nil, errors.New("returned val is not user data")
 	}
-	res, ok := ud.Value.(*fcom.Result)
-	if !ok {
-		return nil, errors.New("returned user data is not result")
+	res := &fcom.Result{}
+	err = glua.TableLua2GoStruct(ud, res)
+	if err != nil {
+		return nil, err
 	}
 	return res, nil
 }

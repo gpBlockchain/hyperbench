@@ -7,21 +7,62 @@ import (
 
 func newBlockchain(L *lua.LState, client fcom.Blockchain) lua.LValue {
 	clientTable := L.NewTable()
-	clientTable.RawSetString("DeployContract", DeployContractLuaFunction(L, client))
-	clientTable.RawSetString("Invoke", InvokeLuaFunction(L, client))
-	clientTable.RawSetString("Transfer", TransferLuaFunction(L, client))
-	clientTable.RawSetString("Confirm", ConfirmLuaFunction(L, client))
-	clientTable.RawSetString("Query", QueryLuaFunction(L, client))
-	clientTable.RawSetString("Option", OptionLuaFunction(L, client))
-	//todo support context
-	//clientTable.RawSetString("GetContext",nil)
-	//clientTable.RawSetString("SetContext",nil)
-	//clientTable.RawSetString("ResetContext",nil)
+	clientTable.RawSetString("DeployContract", deployContractLuaFunction(L, client))
+	clientTable.RawSetString("Invoke", invokeLuaFunction(L, client))
+	clientTable.RawSetString("Transfer", transferLuaFunction(L, client))
+	clientTable.RawSetString("Confirm", confirmLuaFunction(L, client))
+	clientTable.RawSetString("Query", queryLuaFunction(L, client))
+	clientTable.RawSetString("Option", optionLuaFunction(L, client))
+	clientTable.RawSetString("GetContext", getContextLuaFunction(L, client))
+	clientTable.RawSetString("SetContext", setContextLuaFunction(L, client))
+	clientTable.RawSetString("ResetContext", resetContextLuaFunction(L, client))
 	//clientTable.RawSetString("Statistic",nil)
 	return clientTable
 }
 
-func OptionLuaFunction(L *lua.LState, client fcom.Blockchain) lua.LValue {
+func setContextLuaFunction(L *lua.LState, client fcom.Blockchain) lua.LValue {
+	return L.NewFunction(func(state *lua.LState) int {
+		firstArgIndex := 1
+		// check first arg is fcom.Blockchain
+		if checkBlockChainByIdx(state, 1) {
+			firstArgIndex++
+		}
+		text := state.CheckString(firstArgIndex)
+		err := client.SetContext(text)
+		if err != nil {
+			state.Push(lua.LString(err.Error()))
+			return 1
+		}
+		state.Push(lua.LString(""))
+		return 1
+	})
+}
+
+func getContextLuaFunction(L *lua.LState, client fcom.Blockchain) lua.LValue {
+	return L.NewFunction(func(state *lua.LState) int {
+		text, err := client.GetContext()
+		if err != nil {
+			state.Push(lua.LString(err.Error()))
+			return 1
+		}
+		state.Push(lua.LString(text))
+		return 1
+	})
+}
+
+func resetContextLuaFunction(L *lua.LState, client fcom.Blockchain) lua.LValue {
+	return L.NewFunction(func(state *lua.LState) int {
+		err := client.ResetContext()
+		if err != nil {
+			state.Push(lua.LString(err.Error()))
+			return 1
+		}
+		state.Push(lua.LString(""))
+		return 1
+	})
+}
+
+func optionLuaFunction(L *lua.LState, client fcom.Blockchain) lua.LValue {
 	return L.NewFunction(func(state *lua.LState) int {
 		var map1 fcom.Option
 		// case.blockchain:Invoke() --> first arg is fcom.Blockchain
@@ -45,35 +86,35 @@ func OptionLuaFunction(L *lua.LState, client fcom.Blockchain) lua.LValue {
 	})
 }
 
-func InvokeLuaFunction(L *lua.LState, client fcom.Blockchain) *lua.LFunction {
+func invokeLuaFunction(L *lua.LState, client fcom.Blockchain) *lua.LFunction {
 	var invoke fcom.Invoke
-	return invokeLuaFunction(L, client, invoke, func(b fcom.Blockchain, b2 interface{}, option ...fcom.Option) interface{} {
+	return blockchainLuaFunction(L, client, invoke, func(b fcom.Blockchain, b2 interface{}, option ...fcom.Option) interface{} {
 		return b.Invoke(b2.(fcom.Invoke), option...)
 	})
 }
 
-func TransferLuaFunction(L *lua.LState, client fcom.Blockchain) *lua.LFunction {
+func transferLuaFunction(L *lua.LState, client fcom.Blockchain) *lua.LFunction {
 	var transfer fcom.Transfer
-	return invokeLuaFunction(L, client, transfer, func(b fcom.Blockchain, b2 interface{}, option ...fcom.Option) interface{} {
+	return blockchainLuaFunction(L, client, transfer, func(b fcom.Blockchain, b2 interface{}, option ...fcom.Option) interface{} {
 		return b.Transfer(b2.(fcom.Transfer), option...)
 	})
 }
 
-func QueryLuaFunction(L *lua.LState, client fcom.Blockchain) *lua.LFunction {
+func queryLuaFunction(L *lua.LState, client fcom.Blockchain) *lua.LFunction {
 	var query fcom.Query
-	return invokeLuaFunction(L, client, query, func(b fcom.Blockchain, b2 interface{}, option ...fcom.Option) interface{} {
+	return blockchainLuaFunction(L, client, query, func(b fcom.Blockchain, b2 interface{}, option ...fcom.Option) interface{} {
 		return b.Query(b2.(fcom.Query), option...)
 	})
 }
 
-func ConfirmLuaFunction(L *lua.LState, client fcom.Blockchain) *lua.LFunction {
-	var confirm fcom.Result
-	return invokeLuaFunction(L, client, confirm, func(b fcom.Blockchain, b2 interface{}, option ...fcom.Option) interface{} {
+func confirmLuaFunction(L *lua.LState, client fcom.Blockchain) *lua.LFunction {
+	var confirm *fcom.Result
+	return blockchainLuaFunction(L, client, confirm, func(b fcom.Blockchain, b2 interface{}, option ...fcom.Option) interface{} {
 		return b.Confirm(b2.(*fcom.Result), option...)
 	})
 }
 
-func invokeLuaFunction(L *lua.LState, cli fcom.Blockchain, arg1Type interface{}, fn func(fcom.Blockchain, interface{}, ...fcom.Option) interface{}) *lua.LFunction {
+func blockchainLuaFunction(L *lua.LState, cli fcom.Blockchain, arg1Type interface{}, fn func(fcom.Blockchain, interface{}, ...fcom.Option) interface{}) *lua.LFunction {
 	return L.NewFunction(func(state *lua.LState) int {
 		// case.blockchain:Invoke() --> first arg is fcom.Blockchain
 		// case.blockchain.Invoke  ----> first arg is normal
@@ -109,19 +150,22 @@ func invokeLuaFunction(L *lua.LState, cli fcom.Blockchain, arg1Type interface{},
 }
 
 func checkBlockChainByIdx(state *lua.LState, idx int) bool {
-	if state.GetTop() > idx {
+	if state.GetTop() < idx {
 		return false
 	}
-	lvalue := state.CheckTable(idx)
+	idxValue := state.CheckAny(idx)
+	lvalue, ok := idxValue.(*lua.LTable)
+	if !ok {
+		return false
+	}
 	k, _ := lvalue.Next(lua.LString("Invok"))
-	// check arg is fcom.Blockchain
 	if k.String() != "Invoke" {
 		return false
 	}
 	return true
 }
 
-func DeployContractLuaFunction(L *lua.LState, client fcom.Blockchain) *lua.LFunction {
+func deployContractLuaFunction(L *lua.LState, client fcom.Blockchain) *lua.LFunction {
 	return L.NewFunction(func(state *lua.LState) int {
 		err := client.DeployContract()
 		if err != nil {
