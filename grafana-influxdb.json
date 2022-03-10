@@ -16,7 +16,7 @@
   "gnetId": null,
   "graphTooltip": 0,
   "id": 32,
-  "iteration": 1646798105982,
+  "iteration": 1646920360654,
   "links": [],
   "panels": [
     {
@@ -2171,7 +2171,7 @@
     },
     {
       "columns": [],
-      "datasource": "Prometheus",
+      "datasource": "$prometheus",
       "description": "分区使用率、磁盘读取、磁盘写入、下载带宽、上传带宽，如果有多个网卡或者多个分区，是采集的使用率最高的网卡或者分区的数值。",
       "fontSize": "100%",
       "gridPos": {
@@ -2579,7 +2579,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "Prometheus",
+      "datasource": "$prometheus",
       "decimals": 2,
       "fieldConfig": {
         "defaults": {
@@ -2699,7 +2699,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "Prometheus",
+      "datasource": "$prometheus",
       "decimals": 1,
       "description": "",
       "fieldConfig": {
@@ -2830,7 +2830,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "Prometheus",
+      "datasource": "$prometheus",
       "decimals": 2,
       "fieldConfig": {
         "defaults": {
@@ -3045,7 +3045,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "Prometheus",
+      "datasource": "$prometheus",
       "decimals": 2,
       "description": "",
       "fieldConfig": {
@@ -3386,7 +3386,7 @@
         "name": "operator",
         "options": [
           {
-            "selected": false,
+            "selected": true,
             "text": "All",
             "value": "$__all"
           }
@@ -3475,6 +3475,23 @@
         "regex": "",
         "skipUrlSync": false,
         "type": "datasource"
+      },
+      {
+        "current": {
+          "text": "Prometheus",
+          "value": "Prometheus"
+        },
+        "hide": 0,
+        "includeAll": false,
+        "label": null,
+        "multi": false,
+        "name": "prometheus",
+        "options": [],
+        "query": "prometheus",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "type": "datasource"
       }
     ]
   },
@@ -3498,5 +3515,5 @@
   "timezone": "",
   "title": "new frigate tmp",
   "uid": "s4pvo_JMz",
-  "version": 29
+  "version": 31
 }
